@@ -331,6 +331,7 @@ function openEditModal(id) {
   formNote.value       = w.note;
 
   clearFormErrors();
+  _updateAutofillBtn();
   openModal(modalOverlay);
   formWord.focus();
 }
@@ -534,24 +535,30 @@ async function autoFillWithAI() {
   aiAutofillLabel.textContent = '분석 중…';
   aiAutofillSpinner.hidden = false;
 
+  const systemMsg =
+    '당신은 한국어로 답변하는 영한사전 AI입니다. ' +
+    'meaning과 etymology는 반드시 한국어로 작성하세요. ' +
+    'JSON만 출력하고 다른 텍스트는 절대 포함하지 마세요.';
+
   const prompt =
-    `영어 단어 "${word}"에 대해 아래 JSON 형식으로만 응답하세요.\n` +
-    `코드블록, 설명 등 JSON 외 다른 텍스트는 절대 추가하지 마세요.\n\n` +
+    `영어 단어: "${word}"\n\n` +
+    `아래 JSON 형식으로만 응답하세요 (코드블록 없이 순수 JSON만):\n` +
     `{\n` +
-    `  "pronunciation": "IPA 발음기호 (예: /ɪˈfɛm.ər.əl/)",\n` +
-    `  "partOfSpeech": "noun | verb | adjective | adverb | phrase | other 중 하나",\n` +
-    `  "meaning": "한국어 뜻 (간결하게, 여러 의미면 쉼표로 구분)",\n` +
-    `  "etymology": "어원 설명 (한국어, 라틴어/그리스어 등 어원 포함)",\n` +
-    `  "example": "자연스러운 영어 예문 1문장",\n` +
-    `  "tags": ["관련태그1", "관련태그2"]\n` +
-    `}`;
+    `  "pronunciation": "/발음기호/",\n` +
+    `  "partOfSpeech": "noun 또는 verb 또는 adjective 또는 adverb 또는 phrase 또는 other",\n` +
+    `  "meaning": "한국어 뜻 (예: 일시적인, 덧없는)",\n` +
+    `  "etymology": "한국어 어원 설명 (예: 그리스어 ephemeros에서 유래, epi(위에) + hemera(하루) → 하루만 사는)",\n` +
+    `  "example": "영어 예문 한 문장",\n` +
+    `  "tags": ["태그1", "태그2"]\n` +
+    `}\n\n` +
+    `주의: meaning과 etymology 값은 한국어로 작성할 것!`;
 
   try {
     const res = await fetch(`${OLLAMA_BASE}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, prompt, stream: false }),
-      signal: AbortSignal.timeout(40000),
+      body: JSON.stringify({ model, system: systemMsg, prompt, stream: false }),
+      signal: AbortSignal.timeout(60000),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
