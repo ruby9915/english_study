@@ -100,6 +100,11 @@ const btnExport   = document.getElementById('btn-export');
 const jsonFileInput = document.getElementById('json-file-input');
 const fileStatusText = document.getElementById('file-status-text');
 
+// 모달 AI 자동완성
+const btnAIAutofill      = document.getElementById('btn-ai-autofill');
+const aiAutofillSpinner  = document.getElementById('ai-autofill-spinner');
+const aiAutofillLabel    = document.querySelector('.ai-autofill-label');
+
 // Ollama AI
 const btnToggleAI       = document.getElementById('btn-toggle-ai');
 const aiPanel           = document.getElementById('ai-panel');
@@ -301,6 +306,7 @@ function openAddModal() {
   modalTitle.textContent = '✏️ 새 단어 추가';
   wordForm.reset();
   clearFormErrors();
+  _updateAutofillBtn();
   openModal(modalOverlay);
   formWord.focus();
 }
@@ -505,6 +511,78 @@ function clearFormErrors() {
 }
 
 /* =============================================
+   AI 자동완성 (모달 내 단어 입력 시)
+   ============================================= */
+
+function _updateAutofillBtn() {
+  btnAIAutofill.disabled = !formWord.value.trim() || !ollamaOK;
+}
+
+// 단어 입력시 실시간 활성화
+formWord.addEventListener('input', _updateAutofillBtn);
+
+async function autoFillWithAI() {
+  const word  = formWord.value.trim();
+  const model = aiModelSelect.value;
+  if (!word || !ollamaOK || !model) {
+    if (!model) showToast('⚠️ AI 패널에서 모델을 먼저 선택해주세요.');
+    return;
+  }
+
+  // 로딩 UI
+  btnAIAutofill.disabled = true;
+  aiAutofillLabel.textContent = '분석 중…';
+  aiAutofillSpinner.hidden = false;
+
+  const prompt =
+    `영어 단어 "${word}"에 대해 아래 JSON 형식으로만 응답하세요.\n` +
+    `코드블록, 설명 등 JSON 외 다른 텍스트는 절대 추가하지 마세요.\n\n` +
+    `{\n` +
+    `  "pronunciation": "IPA 발음기호 (예: /ɪˈfɛm.ər.əl/)",\n` +
+    `  "partOfSpeech": "noun | verb | adjective | adverb | phrase | other 중 하나",\n` +
+    `  "meaning": "한국어 뜻 (간결하게, 여러 의미면 쉼표로 구분)",\n` +
+    `  "etymology": "어원 설명 (한국어, 라틴어/그리스어 등 어원 포함)",\n` +
+    `  "example": "자연스러운 영어 예문 1문장",\n` +
+    `  "tags": ["관련태그1", "관련태그2"]\n` +
+    `}`;
+
+  try {
+    const res = await fetch(`${OLLAMA_BASE}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, prompt, stream: false }),
+      signal: AbortSignal.timeout(40000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data  = await res.json();
+    const raw   = data.response || '';
+
+    // 자유형식 JSON 추출 (코드블록 안에 있어도 동작)
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON 추출 실패');
+    const p = JSON.parse(jsonMatch[0]);
+
+    if (p.pronunciation) formPron.value      = p.pronunciation;
+    if (p.partOfSpeech)  formPos.value       = p.partOfSpeech;
+    if (p.meaning)       formMeaning.value   = p.meaning;
+    if (p.etymology)     formEtymology.value = p.etymology;
+    if (p.example)       formExample.value   = p.example;
+    if (Array.isArray(p.tags) && p.tags.length) formTags.value = p.tags.join(', ');
+
+    showToast(`✨ "${word}" 자동완성 완료!`);
+  } catch (err) {
+    showToast(`❌ AI 자동완성 실패: ${err.message}`);
+  } finally {
+    aiAutofillSpinner.hidden = true;
+    aiAutofillLabel.textContent = 'AI 자동완성';
+    _updateAutofillBtn();
+  }
+}
+
+btnAIAutofill.addEventListener('click', autoFillWithAI);
+
+/* =============================================
    JSON 파일 관리 (오프라인)
    ============================================= */
 
@@ -528,7 +606,7 @@ function exportJSON() {
   showToast(`💾 vocabulary.json 저장됨 (${words.length}개)`);
 }
 
-/** JSON 파일을 읽어 단어 목록 교체 */
+/** 단어를 읽어 단어 목록 교체 */
 function importJSON(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -596,11 +674,13 @@ async function initOllama() {
       ? `연결됨 — 모델 ${models.length}개`
       : 'Ollama 연결됨 (모델 없음)';
     btnAISend.disabled = !ollamaOK;
+    _updateAutofillBtn();
   } catch {
     aiStatusDot.className = 'ai-status-dot err';
     aiStatusText.textContent = 'Ollama 연결 실패 — 터미널에서 ollama serve 실행 후 재시도';
     aiModelSelect.innerHTML = '<option value="">연결 안 됨</option>';
     btnAISend.disabled = true;
+    _updateAutofillBtn();
   }
 }
 

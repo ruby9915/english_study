@@ -828,6 +828,53 @@ body {
   transform: translateX(-50%) translateY(-6px);
 }
 
+/* ---------- AI 자동완성 바 (form 내) ---------- */
+.form-ai-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: linear-gradient(135deg, #f3f0ff, #ede9fe);
+  border: 1.5px dashed #c4b5fd;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--sp-1);
+}
+.btn-ai-autofill {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: linear-gradient(135deg, #7c5cfc, #a78bfa);
+  color: #fff;
+  border-color: transparent;
+  font-size: var(--text-xs);
+  padding: var(--sp-2) var(--sp-4);
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(124,92,252,0.35);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.btn-ai-autofill:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d4ef0, #9575f5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124,92,252,0.45);
+}
+.btn-ai-autofill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.ai-autofill-spinner {
+  display: inline-block;
+  animation: ai-spin 0.8s linear infinite;
+}
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+.form-ai-hint {
+  font-size: var(--text-xs);
+  color: #7c5cfc;
+  line-height: 1.5;
+}
+
 /* ---------- AI 패널 ---------- */
 .btn-ai-toggle {
   background: linear-gradient(135deg, #3a2d7a, #5b4fcf);
