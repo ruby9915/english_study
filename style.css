@@ -726,6 +726,14 @@ body {
   letter-spacing: 0.6px;
 }
 
+.form-label-sub {
+  font-weight: 400;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .required { color: var(--color-red); margin-left: 2px; }
 
 .form-input,

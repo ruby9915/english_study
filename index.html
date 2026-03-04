@@ -161,6 +161,12 @@
           <span class="form-error" id="err-word"></span>
         </div>
 
+        <div class="form-row">
+          <label class="form-label" for="form-example">예문 <span class="form-label-sub">(단어가 쓰인 문장)</span></label>
+          <textarea id="form-example" class="form-input form-textarea" placeholder="e.g. The ephemeral beauty of cherry blossoms makes them precious." rows="2"></textarea>
+          <span class="form-hint">AI가 예문 속 문맥을 분석하여 뜻·품사를 정확하게 채웁니다</span>
+        </div>
+
         <!-- AI 자동완성 바 -->
         <div class="form-ai-bar" id="form-ai-bar">
           <button type="button" class="btn btn-ai-autofill" id="btn-ai-autofill" disabled>
@@ -168,7 +174,7 @@
             <span class="ai-autofill-label">AI 자동완성</span>
             <span class="ai-autofill-spinner" id="ai-autofill-spinner" hidden>⧗</span>
           </button>
-          <span class="form-ai-hint" id="form-ai-hint">단어를 입력하면 활성화 — Ollama가 발음·품사·뜻·어원·예문·태그를 자동으로 채워줍니다</span>
+          <span class="form-ai-hint" id="form-ai-hint">단어 + 예문 입력 후 클릭 → 발음·품사·뜻·어원·태그 자동 채움</span>
         </div>
 
         <div class="form-row">
@@ -200,10 +206,7 @@
           <textarea id="form-etymology" class="form-input form-textarea" placeholder="e.g. Greek 'ephemeros' → 하루만 사는" rows="2"></textarea>
         </div>
 
-        <div class="form-row">
-          <label class="form-label" for="form-example">예문</label>
-          <textarea id="form-example" class="form-input form-textarea" placeholder="예문을 입력하세요" rows="2"></textarea>
-        </div>
+
 
         <div class="form-row">
           <label class="form-label" for="form-tags">태그</label>

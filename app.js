@@ -519,8 +519,9 @@ function _updateAutofillBtn() {
   btnAIAutofill.disabled = !formWord.value.trim() || !ollamaOK;
 }
 
-// 단어 입력시 실시간 활성화
+// 단어 또는 예문 입력시 실시간 활성화
 formWord.addEventListener('input', _updateAutofillBtn);
+formExample.addEventListener('input', _updateAutofillBtn);
 
 async function autoFillWithAI() {
   const word  = formWord.value.trim();
@@ -535,20 +536,26 @@ async function autoFillWithAI() {
   aiAutofillLabel.textContent = '분석 중…';
   aiAutofillSpinner.hidden = false;
 
+  const example = formExample.value.trim();
+
   const systemMsg =
     '당신은 한국어로 답변하는 영한사전 AI입니다. ' +
     'meaning과 etymology는 반드시 한국어로 작성하세요. ' +
+    '예문이 주어지면 그 문장 속에서 단어가 쓰인 의미/품사를 기준으로 분석하세요. ' +
     'JSON만 출력하고 다른 텍스트는 절대 포함하지 마세요.';
 
+  const exampleLine = example
+    ? `\n예문 (이 문장 속 의미/품사로 분석): "${example}"\n`
+    : '';
+
   const prompt =
-    `영어 단어: "${word}"\n\n` +
+    `영어 단어: "${word}"\n${exampleLine}\n` +
     `아래 JSON 형식으로만 응답하세요 (코드블록 없이 순수 JSON만):\n` +
     `{\n` +
     `  "pronunciation": "/발음기호/",\n` +
     `  "partOfSpeech": "noun 또는 verb 또는 adjective 또는 adverb 또는 phrase 또는 other",\n` +
-    `  "meaning": "한국어 뜻 (예: 일시적인, 덧없는)",\n` +
-    `  "etymology": "한국어 어원 설명 (예: 그리스어 ephemeros에서 유래, epi(위에) + hemera(하루) → 하루만 사는)",\n` +
-    `  "example": "영어 예문 한 문장",\n` +
+    `  "meaning": "한국어 뜻 — 예문이 있으면 그 문맥에 맞는 의미만",\n` +
+    `  "etymology": "한국어 어원 설명",\n` +
     `  "tags": ["태그1", "태그2"]\n` +
     `}\n\n` +
     `주의: meaning과 etymology 값은 한국어로 작성할 것!`;
@@ -574,7 +581,7 @@ async function autoFillWithAI() {
     if (p.partOfSpeech)  formPos.value       = p.partOfSpeech;
     if (p.meaning)       formMeaning.value   = p.meaning;
     if (p.etymology)     formEtymology.value = p.etymology;
-    if (p.example)       formExample.value   = p.example;
+    // 예문은 사용자가 직접 입력했으므로 덮어쓰지 않음
     if (Array.isArray(p.tags) && p.tags.length) formTags.value = p.tags.join(', ');
 
     showToast(`✨ "${word}" 자동완성 완료!`);
