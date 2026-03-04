@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📚 나의 영단어 노트</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Kalam:wght@300;400;700&family=Noto+Sans+KR:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-title">
+        <span class="header-icon">📚</span>
+        <h1>나의 영단어 노트</h1>
+      </div>
+      <button class="btn btn-primary" id="btn-open-add" aria-label="새 단어 추가">
+        <span class="btn-icon">+</span> 단어 추가
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== CONTROLS ===== -->
+  <section class="controls" aria-label="검색 및 필터">
+    <div class="controls-inner">
+      <div class="search-wrap">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="search"
+          id="search-input"
+          class="search-input"
+          placeholder="단어 또는 뜻을 검색하세요..."
+          aria-label="단어 검색"
+        />
+      </div>
+      <div class="filter-row">
+        <select id="filter-pos" class="select-field" aria-label="품사 필터">
+          <option value="">모든 품사</option>
+          <option value="noun">명사 (Noun)</option>
+          <option value="verb">동사 (Verb)</option>
+          <option value="adjective">형용사 (Adjective)</option>
+          <option value="adverb">부사 (Adverb)</option>
+          <option value="phrase">구 (Phrase)</option>
+          <option value="other">기타</option>
+        </select>
+        <select id="filter-sort" class="select-field" aria-label="정렬 기준">
+          <option value="newest">최신순</option>
+          <option value="oldest">오래된순</option>
+          <option value="alpha">가나다순 (A-Z)</option>
+          <option value="favorite">즐겨찾기 먼저</option>
+        </select>
+        <span class="word-count" id="word-count">전체 0개</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content" id="main-content">
+
+    <!-- Empty state -->
+    <div class="empty-state" id="empty-state" hidden>
+      <div class="empty-icon">📖</div>
+      <p class="empty-title">아직 단어가 없어요.</p>
+      <p class="empty-sub">첫 번째 단어를 추가해 보세요!</p>
+      <button class="btn btn-primary" id="btn-empty-add">+ 단어 추가</button>
+    </div>
+
+    <!-- Word grid -->
+    <div class="word-grid" id="word-grid" aria-live="polite" aria-label="단어 목록"></div>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <p>© 나의 영단어 노트 — 인터넷이 된다면 어디서든 📝</p>
+  </footer>
+
+  <!-- ===== ADD / EDIT MODAL ===== -->
+  <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">✏️ 새 단어 추가</h2>
+        <button class="btn-close" id="btn-modal-close" aria-label="닫기">✕</button>
+      </div>
+      <form id="word-form" novalidate>
+        <input type="hidden" id="form-id" />
+
+        <div class="form-row">
+          <label class="form-label" for="form-word">단어 <span class="required">*</span></label>
+          <input type="text" id="form-word" class="form-input" placeholder="e.g. ephemeral" required autocomplete="off" />
+          <span class="form-error" id="err-word"></span>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="form-pron">발음기호</label>
+          <input type="text" id="form-pron" class="form-input" placeholder="e.g. /ɪˈfɛm.ər.əl/" autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="form-pos">품사</label>
+          <select id="form-pos" class="form-input form-select">
+            <option value="">선택 안 함</option>
+            <option value="noun">명사 (Noun)</option>
+            <option value="verb">동사 (Verb)</option>
+            <option value="adjective">형용사 (Adjective)</option>
+            <option value="adverb">부사 (Adverb)</option>
+            <option value="phrase">구 (Phrase)</option>
+            <option value="other">기타</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="form-meaning">뜻 <span class="required">*</span></label>
+          <textarea id="form-meaning" class="form-input form-textarea" placeholder="한국어 뜻을 입력하세요" rows="2" required></textarea>
+          <span class="form-error" id="err-meaning"></span>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="form-etymology">어원</label>
+          <textarea id="form-etymology" class="form-input form-textarea" placeholder="e.g. Greek 'ephemeros' → 하루만 사는" rows="2"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="form-example">예문</label>
+          <textarea id="form-example" class="form-input form-textarea" placeholder="예문을 입력하세요" rows="2"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="form-tags">태그</label>
+          <input type="text" id="form-tags" class="form-input" placeholder="쉼표로 구분 (e.g. literature, nature)" autocomplete="off" />
+          <span class="form-hint">태그는 쉼표(,)로 구분하여 입력하세요</span>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="form-note">메모</label>
+          <textarea id="form-note" class="form-input form-textarea" placeholder="비슷한 단어, 기억 팁 등 자유롭게..." rows="2"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="btn-form-cancel">취소</button>
+          <button type="submit" class="btn btn-primary" id="btn-form-save">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== DELETE CONFIRM MODAL ===== -->
+  <div class="modal-overlay" id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title" hidden>
+    <div class="modal-panel modal-panel--sm">
+      <div class="modal-header">
+        <h2 class="modal-title" id="confirm-title">🗑️ 단어 삭제</h2>
+        <button class="btn-close" id="btn-confirm-close" aria-label="닫기">✕</button>
+      </div>
+      <p class="confirm-message" id="confirm-message"></p>
+      <div class="form-actions">
+        <button class="btn btn-secondary" id="btn-confirm-cancel">취소</button>
+        <button class="btn btn-danger" id="btn-confirm-ok">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

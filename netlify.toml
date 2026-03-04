@@ -1,0 +1,26 @@
+# Netlify 배포 설정
+# 정적 사이트 — 빌드 도구 없음
+
+[build]
+  publish = "."        # 루트 폴더를 그대로 배포
+  command = ""         # 빌드 명령 없음
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # 보안 헤더
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # 캐시 설정
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
