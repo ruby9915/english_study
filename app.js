@@ -547,6 +547,15 @@ function importJSON(file) {
   reader.readAsText(file, 'UTF-8');
 }
 
+// 홈으로 돌아가기 (검색·필터 초기화 + 최상단 스크롤)
+document.getElementById('btn-home').addEventListener('click', () => {
+  searchInput.value = '';
+  filterPos.value   = '';
+  filterSort.value  = 'newest';
+  renderWords();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
 // 불러오기 버튼 → 파일 선택 창 열기
 btnImport.addEventListener('click', () => jsonFileInput.click());
 

@@ -107,7 +107,26 @@ body {
 .header-title {
   display: flex;
   align-items: center;
+}
+
+/* 홈 버튼 (아이콘 + 타이틀) */
+.btn-home {
+  display: flex;
+  align-items: center;
   gap: var(--sp-3);
+  background: none;
+  border: none;
+  padding: var(--sp-1) var(--sp-2);
+  margin: 0 calc(-1 * var(--sp-2));
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-home:hover {
+  background: rgba(26, 35, 64, 0.07);
+}
+.btn-home:active {
+  background: rgba(26, 35, 64, 0.13);
 }
 
 .header-icon {
