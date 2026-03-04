@@ -539,33 +539,42 @@ async function autoFillWithAI() {
   const example = formExample.value.trim();
 
   const systemMsg =
-    '당신은 한국어로 답변하는 영한사전 AI입니다. ' +
-    'meaning과 etymology는 반드시 한국어로 작성하세요. ' +
-    '예문이 주어지면 그 문장 속에서 단어가 쓰인 의미/품사를 기준으로 분석하세요. ' +
-    'JSON만 출력하고 다른 텍스트는 절대 포함하지 마세요.';
+    '당신은 옥스포드 영어 어원사전(Oxford Etymological Dictionary) 수준의 전문 어원학자이자 영한사전 AI입니다.\n' +
+    '모든 설명은 반드시 한국어로 작성하세요.\n' +
+    '확실하지 않은 정보는 추측하지 말고 "불확실" 또는 "여러 설이 있음"이라고 표기하세요.\n' +
+    '예문이 주어지면 반드시 그 문장 속에서 단어가 쓰인 특정 의미와 품사를 기준으로 분석하세요.\n' +
+    'JSON만 출력하고 코드블록·마크다운·설명 등 다른 텍스트는 절대 포함하지 마세요.';
 
   const exampleLine = example
-    ? `\n예문 (이 문장 속 의미/품사로 분석): "${example}"\n`
+    ? `\n예문 (이 문장에서의 의미/품사로 분석하세요): "${example}"\n`
     : '';
 
   const prompt =
-    `영어 단어: "${word}"\n${exampleLine}\n` +
-    `아래 JSON 형식으로만 응답하세요 (코드블록 없이 순수 JSON만):\n` +
+    `영어 단어: "${word}"${exampleLine}\n\n` +
+    `아래 JSON 형식으로만 응답하세요:\n` +
     `{\n` +
-    `  "pronunciation": "/발음기호/",\n` +
-    `  "partOfSpeech": "noun 또는 verb 또는 adjective 또는 adverb 또는 phrase 또는 other",\n` +
-    `  "meaning": "한국어 뜻 — 예문이 있으면 그 문맥에 맞는 의미만",\n` +
-    `  "etymology": "한국어 어원 설명",\n` +
-    `  "tags": ["태그1", "태그2"]\n` +
+    `  "pronunciation": "IPA 발음기호 (예: /ɪˈfɛm.ər.əl/)",\n` +
+    `  "partOfSpeech": "noun | verb | adjective | adverb | phrase | other 중 하나",\n` +
+    `  "meaning": "한국어 뜻. 예문이 있으면 그 문맥의 의미만. 여러 뜻이면 쉼표로 구분",\n` +
+    `  "etymology": "상세 어원 (아래 형식으로 작성):\n` +
+    `    1) 최초 어원 언어와 원형 (예: 라틴어 'currere' = 달리다)\n` +
+    `    2) 중간 변천 과정 (예: 고대 프랑스어 'corir' → 중세 영어 'curren')\n` +
+    `    3) 어근/접두사/접미사 분해 (예: con- (함께) + currere (달리다))\n` +
+    `    4) 현대 의미로의 변화 과정\n` +
+    `    5) 관련 영어 파생어가 있으면 언급 (예: current, curriculum 등 같은 어근)",\n` +
+    `  "tags": ["관련 주제 태그 2~4개"]\n` +
     `}\n\n` +
-    `주의: meaning과 etymology 값은 한국어로 작성할 것!`;
+    `중요:\n` +
+    `- meaning과 etymology는 반드시 한국어로 작성\n` +
+    `- etymology는 최소 3줄 이상 상세하게 작성\n` +
+    `- 확실하지 않으면 추측하지 말 것`;
 
   try {
     const res = await fetch(`${OLLAMA_BASE}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model, system: systemMsg, prompt, stream: false }),
-      signal: AbortSignal.timeout(60000),
+      signal: AbortSignal.timeout(120000),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -577,8 +586,20 @@ async function autoFillWithAI() {
     if (!jsonMatch) throw new Error('JSON 추출 실패');
     const p = JSON.parse(jsonMatch[0]);
 
-    if (p.pronunciation) formPron.value      = p.pronunciation;
-    if (p.partOfSpeech)  formPos.value       = p.partOfSpeech;
+    if (p.pronunciation) formPron.value = p.pronunciation;
+    if (p.partOfSpeech) {
+      // AI가 한국어 또는 영어로 품사를 반환할 수 있으므로 매핑
+      const posMap = {
+        noun: 'noun', '명사': 'noun',
+        verb: 'verb', '동사': 'verb',
+        adjective: 'adjective', '형용사': 'adjective',
+        adverb: 'adverb', '부사': 'adverb',
+        phrase: 'phrase', '구': 'phrase',
+        other: 'other', '기타': 'other',
+      };
+      const raw_pos = p.partOfSpeech.toLowerCase().trim();
+      formPos.value = posMap[raw_pos] || Object.values(posMap).find(v => raw_pos.includes(v)) || '';
+    }
     if (p.meaning)       formMeaning.value   = p.meaning;
     if (p.etymology)     formEtymology.value = p.etymology;
     // 예문은 사용자가 직접 입력했으므로 덮어쓰지 않음
@@ -720,9 +741,10 @@ async function askOllama() {
   aiAbortCtrl = new AbortController();
 
   const systemMsg =
-    '당신은 한국인 영어 학습자를 돕는 AI 튜터입니다.\n' +
+    '당신은 옥스포드 영어 어원사전 수준의 전문 어원학자이자 한국인 영어 학습자를 돕는 AI 튜터입니다.\n' +
     '항상 한국어로 대답하세요 (영어 단어/예문 포함 가능).\n' +
-    '단어를 설명할 때: 뜻, 품사, 어원, 발음 팁, 예문을 심층적으로 알려주세요.';
+    '단어를 설명할 때: 뜻, 품사, 상세 어원(최초 어원→변천 과정→어근 분해→파생어), 발음 팁, 예문을 심층적으로 알려주세요.\n' +
+    '확실하지 않은 정보는 추측하지 말고 "확실하지 않음" 이라고 표기하세요.';
 
   const prompt = `${systemMsg}${buildAIContext()}\n\n[질문]\n${query}`;
 
