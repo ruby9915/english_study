@@ -22,6 +22,9 @@
         <button class="btn btn-file" id="btn-export" aria-label="JSON 파일 저장">
           💾 저장
         </button>
+        <button class="btn btn-ai-toggle" id="btn-toggle-ai" aria-label="AI 어시스턴트 열기/닫기" aria-expanded="false">
+          🤖 AI 질문
+        </button>
         <button class="btn btn-primary" id="btn-open-add" aria-label="새 단어 추가">
           <span class="btn-icon">+</span> 단어 추가
         </button>
@@ -36,6 +39,55 @@
 
   <!-- 숨검진 파일 입력 -->
   <input type="file" id="json-file-input" accept=".json" hidden aria-hidden="true" />
+
+  <!-- ===== AI 패널 ===== -->
+  <section class="ai-panel" id="ai-panel" hidden aria-label="AI 어시스턴트">
+    <div class="ai-panel-inner">
+
+      <!-- 헤더: 상태 + 모델 선택 -->
+      <div class="ai-panel-header">
+        <div class="ai-panel-title">
+          <span>🤖 AI 어시스턴트</span>
+          <span class="ai-status-dot" id="ai-status-dot"></span>
+          <span class="ai-status-text" id="ai-status-text">Ollama 연결 확인 중…</span>
+        </div>
+        <div class="ai-panel-config">
+          <select id="ai-model-select" class="select-field ai-model-select" aria-label="AI 모델 선택">
+            <option value="">모델 로딩 중…</option>
+          </select>
+          <label class="ai-context-label">
+            <input type="checkbox" id="ai-use-context" checked />
+            <span>내 단어장 참고</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 질문 입력 -->
+      <div class="ai-input-area">
+        <textarea
+          id="ai-query-input"
+          class="ai-textarea"
+          placeholder="예: 'ephemeral' 어원 알려줘 / 비슷한 단어 추천 / 예문 만들어줘… (Ctrl+Enter 전송)"
+          rows="3"
+          aria-label="AI 질문 입력"
+        ></textarea>
+        <div class="ai-input-actions">
+          <button class="btn btn-ai-send" id="btn-ai-send" disabled>질문하기 ↵</button>
+          <button class="btn btn-secondary ai-btn-clear" id="btn-ai-clear" hidden>🗑 초기화</button>
+        </div>
+      </div>
+
+      <!-- 응답 영역 -->
+      <div class="ai-response-area" id="ai-response-area" hidden>
+        <div class="ai-response-label">💬 AI 응답</div>
+        <div class="ai-response-content" id="ai-response-content"></div>
+        <div class="ai-response-loading" id="ai-response-loading" hidden aria-label="응답 생성 중">
+          <span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
 
   <!-- ===== CONTROLS ===== -->
   <section class="controls" aria-label="검색 및 필터">

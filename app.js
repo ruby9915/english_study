@@ -100,6 +100,20 @@ const btnExport   = document.getElementById('btn-export');
 const jsonFileInput = document.getElementById('json-file-input');
 const fileStatusText = document.getElementById('file-status-text');
 
+// Ollama AI
+const btnToggleAI       = document.getElementById('btn-toggle-ai');
+const aiPanel           = document.getElementById('ai-panel');
+const aiModelSelect     = document.getElementById('ai-model-select');
+const aiStatusDot       = document.getElementById('ai-status-dot');
+const aiStatusText      = document.getElementById('ai-status-text');
+const aiUseContext      = document.getElementById('ai-use-context');
+const aiQueryInput      = document.getElementById('ai-query-input');
+const btnAISend         = document.getElementById('btn-ai-send');
+const btnAIClear        = document.getElementById('btn-ai-clear');
+const aiResponseArea    = document.getElementById('ai-response-area');
+const aiResponseContent = document.getElementById('ai-response-content');
+const aiResponseLoading = document.getElementById('ai-response-loading');
+
 /* =============================================
    렌더링
    ============================================= */
@@ -547,6 +561,151 @@ jsonFileInput.addEventListener('change', (e) => {
 });
 
 /* =============================================
+   Ollama AI 어시스턴트
+   ============================================= */
+const OLLAMA_BASE = 'http://localhost:11434';
+let ollamaOK = false;
+let aiAbortCtrl = null;
+
+/** Ollama 서버 연결 확인 + 모델 목록 로드 */
+async function initOllama() {
+  try {
+    const res = await fetch(`${OLLAMA_BASE}/api/tags`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const models = (data.models || []).map(m => m.name);
+
+    aiModelSelect.innerHTML = models.length
+      ? models.map(m => `<option value="${m}">${m}</option>`).join('')
+      : '<option value="">모델 없음 (사전에 ollama pull 필요)</option>';
+
+    ollamaOK = models.length > 0;
+    aiStatusDot.className = `ai-status-dot ${ollamaOK ? 'ok' : 'warn'}`;
+    aiStatusText.textContent = ollamaOK
+      ? `연결됨 — 모델 ${models.length}개`
+      : 'Ollama 연결됨 (모델 없음)';
+    btnAISend.disabled = !ollamaOK;
+  } catch {
+    aiStatusDot.className = 'ai-status-dot err';
+    aiStatusText.textContent = 'Ollama 연결 실패 — 터미널에서 ollama serve 실행 후 재시도';
+    aiModelSelect.innerHTML = '<option value="">연결 안 됨</option>';
+    btnAISend.disabled = true;
+  }
+}
+
+/** 단어장 콘텍스트 문자열 생성 */
+function buildAIContext() {
+  if (!aiUseContext.checked || words.length === 0) return '';
+  const list = words
+    .slice(0, 40)
+    .map(w => `- ${w.word}${w.partOfSpeech ? ` (${w.partOfSpeech})` : ''}: ${w.meaning}`)
+    .join('\n');
+  return `\n\n[사용자 단어장 (${Math.min(words.length, 40)}개)]
+${list}`;
+}
+
+/** Ollama 스트리밍 요청 */
+async function askOllama() {
+  const query = aiQueryInput.value.trim();
+  const model = aiModelSelect.value;
+  if (!query || !ollamaOK || !model) return;
+
+  // 진행 중이면 이전 요청 취소
+  if (aiAbortCtrl) aiAbortCtrl.abort();
+  aiAbortCtrl = new AbortController();
+
+  const systemMsg =
+    '당신은 한국인 영어 학습자를 돕는 AI 튜터입니다.\n' +
+    '항상 한국어로 대답하세요 (영어 단어/예문 포함 가능).\n' +
+    '단어를 설명할 때: 뜻, 품사, 어원, 발음 팁, 예문을 심층적으로 알려주세요.';
+
+  const prompt = `${systemMsg}${buildAIContext()}\n\n[질문]\n${query}`;
+
+  // UI: 응답 영역 표시
+  aiResponseArea.hidden = false;
+  aiResponseContent.textContent = '';
+  aiResponseLoading.hidden = false;
+  btnAISend.disabled = true;
+  btnAIClear.hidden = true;
+
+  try {
+    const res = await fetch(`${OLLAMA_BASE}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, prompt, stream: true }),
+      signal: aiAbortCtrl.signal,
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    aiResponseLoading.hidden = true;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const obj = JSON.parse(line);
+          if (obj.response) {
+            aiResponseContent.textContent += obj.response;
+            // 자동 스크롤
+            aiResponseContent.scrollTop = aiResponseContent.scrollHeight;
+          }
+        } catch { /* 라인 파싱 실패 무시 */ }
+      }
+    }
+  } catch (err) {
+    aiResponseLoading.hidden = true;
+    if (err.name === 'AbortError') {
+      aiResponseContent.textContent += '\n[입력 취소됨]';
+    } else {
+      aiResponseContent.textContent = `❌ 오류: ${err.message}`;
+    }
+  } finally {
+    btnAISend.disabled = !ollamaOK;
+    btnAIClear.hidden = false;
+    aiAbortCtrl = null;
+  }
+}
+
+// AI 패널 토글
+btnToggleAI.addEventListener('click', () => {
+  const nowHidden = aiPanel.hidden;
+  aiPanel.hidden = !nowHidden;
+  btnToggleAI.setAttribute('aria-expanded', String(nowHidden));
+  btnToggleAI.classList.toggle('active', nowHidden);
+  if (nowHidden) aiQueryInput.focus();
+});
+
+// 질문 전송
+btnAISend.addEventListener('click', askOllama);
+aiQueryInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    askOllama();
+  }
+});
+
+// 응답 초기화
+btnAIClear.addEventListener('click', () => {
+  if (aiAbortCtrl) { aiAbortCtrl.abort(); aiAbortCtrl = null; }
+  aiResponseArea.hidden = true;
+  aiResponseContent.textContent = '';
+  aiQueryInput.value = '';
+  btnAIClear.hidden = true;
+  aiQueryInput.focus();
+});
+
+/* =============================================
    토스트 메시지
    ============================================= */
 function showToast(message, duration = 2200) {
@@ -619,4 +778,5 @@ function seedSampleData() {
     fileStatusText.textContent = `🗂️ localStorage에서 ${words.length}개 단어 로드됨`;
   }
   renderWords();
+  initOllama(); // Ollama 연결 확인
 })();
