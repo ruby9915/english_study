@@ -4,12 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📚 나의 영단어 노트</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet"
-  />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -21,11 +15,27 @@
         <span class="header-icon">📚</span>
         <h1>나의 영단어 노트</h1>
       </div>
-      <button class="btn btn-primary" id="btn-open-add" aria-label="새 단어 추가">
-        <span class="btn-icon">+</span> 단어 추가
-      </button>
+      <div class="header-actions">
+        <button class="btn btn-file" id="btn-import" aria-label="JSON 파일 불러오기">
+          📂 불러오기
+        </button>
+        <button class="btn btn-file" id="btn-export" aria-label="JSON 파일 저장">
+          💾 저장
+        </button>
+        <button class="btn btn-primary" id="btn-open-add" aria-label="새 단어 추가">
+          <span class="btn-icon">+</span> 단어 추가
+        </button>
+      </div>
+    </div>
+    <!-- 파일 상태바 -->
+    <div class="file-statusbar" id="file-statusbar">
+      <span class="file-status-icon">📄</span>
+      <span class="file-status-text" id="file-status-text">저장된 파일 없음 — ‘파일 불러오기’로 JSON 로드 혹은 ‘저장’으로 새 JSON 생성</span>
     </div>
   </header>
+
+  <!-- 숨검진 파일 입력 -->
+  <input type="file" id="json-file-input" accept=".json" hidden aria-hidden="true" />
 
   <!-- ===== CONTROLS ===== -->
   <section class="controls" aria-label="검색 및 필터">
@@ -78,7 +88,7 @@
 
   <!-- ===== FOOTER ===== -->
   <footer class="site-footer">
-    <p>© 나의 영단어 노트 — 인터넷이 된다면 어디서든 📝</p>
+    <p>💬 단어는 브라우저에 자동 저장(localStorage) · 파일로 관리하려면 ‘저장’ 버튼으로 vocabulary.json 다운로드</p>
   </footer>
 
   <!-- ===== ADD / EDIT MODAL ===== -->

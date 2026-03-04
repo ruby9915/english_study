@@ -1,8 +1,15 @@
 /**
  * 나의 영단어 노트 — app.js
- * - localStorage 기반 영단어 CRUD
+ * - localStorage 기반 영단어 CRUD (자동 저장)
+ * - JSON 파일 내보내기 / 불러오기 (오프라인 데이터 관리)
  * - 검색, 필터, 정렬
  * - 즐겨찾기
+ *
+ * [오프라인 사용법]
+ *  1. index.html을 브라우저에서 직접 열기
+ *  2. 단어는 브라우저 localStorage에 자동 저장됨
+ *  3. 백업·이전: 「💾 저장」→ vocabulary.json 다운로드
+ *  4. 복원·불러오기: 「📂 불러오기」→ JSON 파일 선택
  */
 
 'use strict';
@@ -86,6 +93,12 @@ const confirmMessage  = document.getElementById('confirm-message');
 // 토스트
 const toast = document.getElementById('toast');
 let toastTimer = null;
+
+// JSON 파일 관리 (오프라인)
+const btnImport   = document.getElementById('btn-import');
+const btnExport   = document.getElementById('btn-export');
+const jsonFileInput = document.getElementById('json-file-input');
+const fileStatusText = document.getElementById('file-status-text');
 
 /* =============================================
    렌더링
@@ -478,6 +491,62 @@ function clearFormErrors() {
 }
 
 /* =============================================
+   JSON 파일 관리 (오프라인)
+   ============================================= */
+
+/** 현재 단어 목록을 vocabulary.json으로 다운로드 */
+function exportJSON() {
+  if (words.length === 0) {
+    showToast('⚠️ 저장할 단어가 없습니다.');
+    return;
+  }
+  const json = JSON.stringify(words, null, 2);
+  const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'vocabulary.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  fileStatusText.textContent = `💾 vocabulary.json 저장 완료 (${words.length}개 단어)`;
+  showToast(`💾 vocabulary.json 저장됨 (${words.length}개)`);
+}
+
+/** JSON 파일을 읽어 단어 목록 교체 */
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const loaded = JSON.parse(e.target.result);
+      if (!Array.isArray(loaded)) throw new Error('배열 형식이 아닙니다.');
+      words = loaded;
+      saveWords(); // localStorage도 동기화
+      renderWords();
+      fileStatusText.textContent = `📂 ${file.name} 로드됨 (${loaded.length}개 단어)`;
+      showToast(`📂 ${loaded.length}개 단어를 불러왔습니다!`);
+    } catch (err) {
+      showToast('❌ JSON 형식이 올바르지 않습니다.');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// 불러오기 버튼 → 파일 선택 창 열기
+btnImport.addEventListener('click', () => jsonFileInput.click());
+
+// 저장 버튼 → JSON 다운로드
+btnExport.addEventListener('click', exportJSON);
+
+// 파일 선택 완료 시 import 실행
+jsonFileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) importJSON(file);
+  e.target.value = ''; // 같은 파일 재선택 허용
+});
+
+/* =============================================
    토스트 메시지
    ============================================= */
 function showToast(message, duration = 2200) {
@@ -545,6 +614,9 @@ function seedSampleData() {
 (function init() {
   if (words.length === 0) {
     seedSampleData();
+    fileStatusText.textContent = '✨ 샘플 단어 3개로 시작합니다 — 「💾 저장」으로 JSON 파일 생성 가능';
+  } else {
+    fileStatusText.textContent = `🗂️ localStorage에서 ${words.length}개 단어 로드됨`;
   }
   renderWords();
 })();
